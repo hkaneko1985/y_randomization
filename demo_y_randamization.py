@@ -14,7 +14,7 @@ from sklearn.cross_decomposition import PLSRegression
 from sklearn.model_selection import train_test_split
 
 # settings
-number_of_training_samples = 1000
+number_of_training_samples = 2000
 number_of_test_samples = 10000
 number_of_x_variables = 100
 number_of_y_randomization = 30
