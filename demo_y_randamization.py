@@ -14,9 +14,9 @@ from sklearn.cross_decomposition import PLSRegression
 from sklearn.model_selection import train_test_split
 
 # settings
-number_of_training_samples = 2000
+number_of_training_samples = 3000
 number_of_test_samples = 10000
-number_of_x_variables = 100
+number_of_x_variables = 1000
 number_of_y_randomization = 30
 max_number_of_pls_components = 20
 fold_number = 5
@@ -61,6 +61,7 @@ for y_rand_num in range(number_of_y_randomization):
     print('{0} / {1}'.format(y_rand_num + 1, number_of_y_randomization))
     autoscaled_y_train_rand = np.random.permutation(autoscaled_y_train)
     y_train_rand = autoscaled_y_train_rand * y_train.std(ddof=1) + y_train.mean()
+    mae_all_cv = list()
     for pls_component in pls_components:
         pls_model_in_cv = PLSRegression(n_components=pls_component)
         pls_model_in_cv.fit(autoscaled_x_train, autoscaled_y_train_rand)
