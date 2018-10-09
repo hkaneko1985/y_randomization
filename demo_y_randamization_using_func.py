@@ -12,6 +12,7 @@ from sklearn import datasets
 from sklearn import model_selection
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.model_selection import train_test_split
+from y_rand_predict import y_rand_predict
 
 # settings
 number_of_training_samples = 100
@@ -59,38 +60,25 @@ predicted_y_test = predicted_y_test * y_train.std(ddof=1) + y_train.mean()
 statistics_yrand = np.empty([number_of_y_randomization, 6])
 for y_rand_num in range(number_of_y_randomization):
     print('{0} / {1}'.format(y_rand_num + 1, number_of_y_randomization))
-    autoscaled_y_train_rand = np.random.permutation(autoscaled_y_train)
-    y_train_rand = autoscaled_y_train_rand * y_train.std(ddof=1) + y_train.mean()
     mae_all_cv = list()
     for pls_component in pls_components:
         pls_model_in_cv = PLSRegression(n_components=pls_component)
-        pls_model_in_cv.fit(autoscaled_x_train, autoscaled_y_train_rand)
-        calculated_y_in_cv = np.ndarray.flatten(pls_model_in_cv.predict(autoscaled_x_train))
-        estimated_y_in_cv = np.ndarray.flatten(
-            model_selection.cross_val_predict(pls_model_in_cv, autoscaled_x_train, autoscaled_y_train_rand,
-                                              cv=fold_number))
-        calculated_y_in_cv = calculated_y_in_cv * y_train.std(ddof=1) + y_train.mean()
-        estimated_y_in_cv = estimated_y_in_cv * y_train.std(ddof=1) + y_train.mean()
+        y_train_rand, estimated_y_train_rand, estimated_y_in_cv = y_rand_predict(regression_model, x_train, y_train, fold_number, y_rand_num)
         mae_all_cv.append(float(sum(abs(y_train_rand - estimated_y_in_cv)) / len(y_train)))
     optimal_pls_component_number_rand = np.where(mae_all_cv == np.min(mae_all_cv))
     optimal_pls_component_number_rand = optimal_pls_component_number_rand[0][0] + 1
     regression_model = PLSRegression(n_components=optimal_pls_component_number_rand)
-    regression_model.fit(autoscaled_x_train, autoscaled_y_train_rand)
-    estimated_y_train_rand = np.ndarray.flatten(regression_model.predict(autoscaled_x_train))
-    estimated_y_train_rand = estimated_y_train_rand * y_train.std(ddof=1) + y_train.mean()
-    estimated_y_in_cv_rand = np.ndarray.flatten(
-        model_selection.cross_val_predict(regression_model, autoscaled_x_train, autoscaled_y_train_rand,
-                                          cv=fold_number))
-    estimated_y_in_cv_rand = estimated_y_in_cv_rand * y_train.std(ddof=1) + y_train.mean()
+    
+    y_train_rand, estimated_y_train_rand, estimated_y_train_in_cv_rand = y_rand_predict(regression_model, x_train, y_train, fold_number, y_rand_num)
 
     statistics_yrand[y_rand_num, 0] = float(
         1 - sum((y_train_rand - estimated_y_train_rand) ** 2) / sum((y_train_rand - y_train.mean()) ** 2))
     statistics_yrand[y_rand_num, 1] = float((sum((y_train_rand - estimated_y_train_rand) ** 2) / len(y_train)) ** 0.5)
     statistics_yrand[y_rand_num, 2] = float(sum(abs(y_train_rand - estimated_y_train_rand)) / len(y_train))
     statistics_yrand[y_rand_num, 3] = float(
-        1 - sum((y_train_rand - estimated_y_in_cv_rand) ** 2) / sum((y_train_rand - y_train.mean()) ** 2))
-    statistics_yrand[y_rand_num, 4] = float((sum((y_train_rand - estimated_y_in_cv_rand) ** 2) / len(y_train)) ** 0.5)
-    statistics_yrand[y_rand_num, 5] = float(sum(abs(y_train_rand - estimated_y_in_cv_rand)) / len(y_train))
+        1 - sum((y_train_rand - estimated_y_train_in_cv_rand) ** 2) / sum((y_train_rand - y_train.mean()) ** 2))
+    statistics_yrand[y_rand_num, 4] = float((sum((y_train_rand - estimated_y_train_in_cv_rand) ** 2) / len(y_train)) ** 0.5)
+    statistics_yrand[y_rand_num, 5] = float(sum(abs(y_train_rand - estimated_y_train_in_cv_rand)) / len(y_train))
 
 # results
 plt.rcParams["font.size"] = 16
